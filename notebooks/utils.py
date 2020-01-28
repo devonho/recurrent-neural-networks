@@ -7,7 +7,7 @@ from keras.preprocessing.text import Tokenizer
 
 from sklearn.utils import shuffle
 
-from IPython.display import HTML
+#from IPython.display import HTML
 
 from itertools import chain
 from keras.utils import plot_model
