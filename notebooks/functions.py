@@ -266,11 +266,11 @@ def make_callbacks(model_name, save=SAVE_MODEL):
     """Make list of callbacks for training"""
 
     class CallBackLogger(Callback):
-        def on_epoch_begin(self, epoch):
-            logging.info('Epoch began ' + epoch)
+        def on_epoch_begin(self, epoch, logs=None):
+            logging.info('Epoch began ' + str(epoch))
 
-        def on_epoch_end(self, epoch):
-            logging.info('Epoch ended ' + epoch)
+        def on_epoch_end(self, epoch, logs=None):
+            logging.info('Epoch ended ' + str(epoch))
 
 
     callbacks = [EarlyStopping(monitor='val_loss', patience=5), ProgbarLogger(), CallBackLogger()]
