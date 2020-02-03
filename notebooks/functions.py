@@ -14,7 +14,7 @@ from keras.utils import get_file
 from keras.models import Sequential, load_model
 from keras.layers import LSTM, Dense, Dropout, Embedding, Masking, Bidirectional
 from keras.optimizers import Adam
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.callbacks import EarlyStopping, ModelCheckpoint, ProgbarLogger, Callback
 
 from sklearn.utils import shuffle
 
@@ -79,7 +79,7 @@ def make_sequences(texts,
     num_words = len(word_idx) + 1
     word_counts = tokenizer.word_counts
 
-    print(f'There are {num_words} unique words.')
+    logging.info(f'There are {num_words} unique words.')
 
     # Convert text to sequences of integers
     sequences = tokenizer.texts_to_sequences(texts)
@@ -109,7 +109,7 @@ def make_sequences(texts,
             training_seq.append(extract[:-1])
             labels.append(extract[-1])
 
-    print(f'There are {len(training_seq)} training sequences.')
+    logging.info(f'There are {len(training_seq)} training sequences.')
 
     # Return everything needed for setting up the model
     return word_idx, idx_word, num_words, word_counts, new_texts, new_sequences, training_seq, labels
@@ -121,8 +121,8 @@ def find_answer(index):
     feats = ' '.join(idx_word[i] for i in features[index])
     answer = idx_word[labels[index]]
 
-    print('Features:', feats)
-    print('\nLabel: ', answer)
+    logging.info('Features:', feats)
+    logging.info('\nLabel: ', answer)
 
 def create_train_valid(features,
                        labels,
@@ -170,13 +170,13 @@ def find_closest(query, embedding_matrix, word_idx, idx_word, n=10):
     idx = word_idx.get(query, None)
     # Handle case where query is not in vocab
     if idx is None:
-        print(f'{query} not found in vocab.')
+        logging.info(f'{query} not found in vocab.')
         return
     else:
         vec = embedding_matrix[idx]
         # Handle case where word doesn't have an embedding
         if np.all(vec == 0):
-            print(f'{query} has no pre-trained embedding.')
+            logging.info(f'{query} has no pre-trained embedding.')
             return
         else:
             # Calculate distance between vector and all others
@@ -187,11 +187,11 @@ def find_closest(query, embedding_matrix, word_idx, idx_word, n=10):
             sorted_dists = dists[idxs]
             closest = [idx_word[i] for i in idxs]
 
-    print(f'Query: {query}\n')
+    logging.info(f'Query: {query}\n')
     max_len = max([len(i) for i in closest])
     # Print out the word and cosine distances
     for word, dist in zip(closest, sorted_dists):
-        print(f'Word: {word:15} Cosine Similarity: {round(dist, 4)}')
+        logging.info(f'Word: {word:15} Cosine Similarity: {round(dist, 4)}')
 
 def make_word_level_model(num_words,
                           embedding_matrix,
@@ -264,7 +264,16 @@ def make_word_level_model(num_words,
 
 def make_callbacks(model_name, save=SAVE_MODEL):
     """Make list of callbacks for training"""
-    callbacks = [EarlyStopping(monitor='val_loss', patience=5)]
+
+    class CallBackLogger(Callback):
+        def on_epoch_begin(self, epoch):
+            logging.info('Epoch began ' + epoch)
+
+        def on_epoch_end(self, epoch):
+            logging.info('Epoch ended ' + epoch)
+
+
+    callbacks = [EarlyStopping(monitor='val_loss', patience=5), ProgbarLogger(), CallBackLogger()]
 
     if save:
         callbacks.append(
@@ -274,18 +283,20 @@ def make_callbacks(model_name, save=SAVE_MODEL):
                 save_weights_only=False))
     return callbacks
 
-def load_and_evaluate(model_name, X_valid, y_valid, return_model):
+def load_and_evaluate(model_name, X_valid, y_valid, return_model, evaluate=False):
     """Load in a trained model and evaluate with log loss and accuracy"""
 
-    model = load_model(f'{model_dir}{model_name}.h5')    
-    r = model.evaluate(X_valid, y_valid, batch_size=2048, verbose=1)
-    print(model.metrics_names)
+    model = load_model(f'{model_dir}{model_name}.h5')
+    
+    if evaluate:
+        r = model.evaluate(X_valid, y_valid, batch_size=2048, verbose=1)
 
-    valid_crossentropy = r[0]
-    valid_accuracy = r[1]
+        valid_crossentropy = r[0]
+        valid_accuracy = r[1]
 
-    print(f'Cross Entropy: {round(valid_crossentropy, 4)}')
-    print(f'Accuracy: {round(100 * valid_accuracy, 2)}%')
+        logging.info(model.metrics_names)
+        logging.info(f'Cross Entropy: {round(valid_crossentropy, 4)}')
+        logging.info(f'Accuracy: {round(100 * valid_accuracy, 2)}%')
 
     if return_model:
         return model
@@ -324,7 +335,7 @@ def load_glove_embedding_matrix(num_words):
         else:
             not_found += 1
 
-    print(f'There were {not_found} words without pre-trained embeddings.')
+    logging.info(f'There were {not_found} words without pre-trained embeddings.')
     '''
     gc.enable()
     del vectors
@@ -428,5 +439,5 @@ def generate_output(model,
     return ' '.join(original_sequence), ' '.join(gen_list[0]), ' '.join(a)
 
 if __name__ == '__main__':
-    print(show_tensorflow_config())
-    #print(load_abstracts())
+    logging.info(show_tensorflow_config())
+    #logging.info(load_abstracts())

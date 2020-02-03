@@ -93,7 +93,6 @@ def remove_spaces(s):
     
     return s
 
-
 def get_data(file, filters='!"%;[\\]^_`{|}~\t\n', training_len=50,
              lower=False):
     """Retrieve formatted training and validation data from a file"""
@@ -288,8 +287,6 @@ def generate_output(model,
 
     return seed_html, gen_html, a_html
 
-
-
 def header(text, color = 'black', gen_text = None):
     if gen_text:
         raw_html = f'<h1 style="color: {color};"><p><center>' + str(
@@ -298,7 +295,6 @@ def header(text, color = 'black', gen_text = None):
         raw_html = f'<h1 style="color: {color};"><center>' + str(
             text) + '</center></h1>'
     return raw_html
-
 
 def box(text, gen_text=None):
     if gen_text:
@@ -309,7 +305,6 @@ def box(text, gen_text=None):
         raw_html = '<div style="border:1px inset black;padding:1em;font-size: 20px;">' + str(
             text) + '</div>'
     return raw_html
-
 
 def addContent(old_html, raw_html):
     old_html += raw_html
